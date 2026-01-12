@@ -104,3 +104,29 @@ exports.googleloginController=async(req,res)=>{
    
     
 }
+
+
+// ............................................ADMIN-PAGE-CONTROLLERS............................................
+ exports.getAllUsersController = async (req,res)=>{
+    console.log("Inside getAllUsersController");
+    
+   try{
+        // get all users from db 
+        
+        
+        const allUsers = await users.find({ role: { $ne: "admin" } })
+      res.status(200).json({
+      totalUsers: allUsers.length,
+      users: allUsers
+    });
+       
+    }catch(error){
+        console.log(error);
+        res.status(500).json(error)
+        
+    }
+    
+    
+   
+  
+}

@@ -74,6 +74,28 @@ const cipher = crypto.createCipheriv(
     
 }
 
+// get allfiles from one folder// get all files from all folders
+exports.getFileArrayController=async(req,res)=>{
+    console.log("Inside getFileArrayController");
+    try{
+        const { folderId } = req.params;
+        const userMail =req.payload
+        if(folderId){
+         const folderFiles =await files.find({folderId: folderId,useremail: userMail})
+        res.status(200).json(folderFiles)
+        }
+        else{
+        const allFiles =await files.find({useremail:userMail})
+        res.status(200).json(allFiles)
+        }
+        
+    }catch(error){
+     console.log(error);
+     res.status(500).json("Failed to fetch Files!")
+    }
+    
+    
+}
 
 // view file 
 exports.viewFileController=async(req,res)=>{
@@ -156,11 +178,11 @@ catch(error){
 
 // share file
 exports.shareFileController=async(req,res)=>{
-  console.log("Inside downloadFileController");
+  console.log("Inside shareFileController");
   
   try{
  const { fileId } = req.params
-
+console.log(fileId)
   const shareToken = crypto.randomBytes(20).toString('hex')
 
   await sharefile.create({
@@ -181,6 +203,7 @@ catch(error){
   }
 }
 
+// access file
 exports.accessFileController=async(req,res)=>{
   console.log("Inside accessFileController");
   
