@@ -1,5 +1,5 @@
 const files = require('../models/fileModel')
-const sharefile = require('../models/shareModel')
+// const sharefile = require('../models/shareModel')
 const cloudinary = require('../config/cloudinary')
 const decryptFile = require('../utils/decryptFile')
 const crypto = require('crypto')
@@ -211,32 +211,7 @@ catch(error){
   }
 }
 
-// share file
-exports.shareFileController=async(req,res)=>{
-  console.log("Inside shareFileController");
-  
-  try{
- const { fileId } = req.params
-console.log(fileId)
-  const shareToken = crypto.randomBytes(20).toString('hex')
 
-  await sharefile.create({
-    fileId,
-    token: shareToken,
-    expiresAt: Date.now() + 24 * 60 * 60 * 1000 // 24 hrs
-  })
-
-  const shareUrl = `${process.env.CLIENT_URL}/share/${shareToken}`
-
-  res.status(200).json({ shareUrl })
-
-}
-catch(error){
-   console.log(error);
-   res.status(500).json("File Not Shared !!")
-    
-  }
-}
 
 // access file
 exports.accessFileController=async(req,res)=>{

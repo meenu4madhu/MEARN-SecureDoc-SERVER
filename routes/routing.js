@@ -10,7 +10,6 @@ const  storageController  = require('../controller/storageController');
 const upload = require('../middlewares/multerMiddleware')
 const complaint = require('../models/complaintModel')
 const router = new express.Router()
-const passport = require("../config/passport")
 
 //register
 router.post('/user/register',userController.registerController) 
@@ -39,10 +38,9 @@ router.get('/user/history',jwtMiddleware,fileController.getFileArrayController)
 router.get('/user/file/view/:fileId',jwtMiddleware,fileController.viewFileController) 
 
 // download file 
-// router.get('/download/:fileId',jwtMiddleware,fileController.downloadFileController) 
+ router.get('/download/:fileId',jwtMiddleware,fileController.downloadFileController) 
 
-// share file
-router.post('/sharing/:fileId',jwtMiddleware,fileController.shareFileController) 
+
 
 // Acces file
 router.get('/share/:token',fileController.accessFileController) 
