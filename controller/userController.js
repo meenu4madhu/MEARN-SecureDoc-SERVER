@@ -17,7 +17,7 @@ exports.registerController=async(req,res)=>{
     }
 
     else{
-        const newUser=new users({username,email,password:hashedPassword})
+        const newUser=new users({username,email,password:hashedPassword})  
         await newUser.save()
         res.status(200).json(newUser)
     }
@@ -68,42 +68,99 @@ exports.loginController=async(req,res)=>{
     
 }
 
-// googlelogin
-exports.googleloginController=async(req,res)=>{
-    console.log("Inside googleloginController");
-
-   const {username,email}=req.body
-//    console.log(email,password);
-   try{
-    const existingUser = await users.findOne({email})
-
-
-    if(!existingUser){
-        // register
-         const newUser=await users.create({username,email,password:"google-password"})
-        // generate token
-         const token = jwt.sign({userMail:newUser.email,role:newUser.role},process.env.JWTSECRET)
-            res.status(200).json({newUser,token})
-            
-         
-    }
-    // login
-    else{
-        const token = jwt.sign({userMail:existingUser.email,role:existingUser.role},process.env.JWTSECRET)
+// google login
+exports.googleLoginController = async(req,res)=>{
+    console.log("Inside Register controller");
+    const {username,email,password,role}=req.body
+    console.log(username,email,password,role);
+    try{
+        // check mail in model
+        const existingUser = await users.findOne({email})
+        if(existingUser){
+            // login
+            // generate token
+            const token = jwt.sign({userMail:existingUser.email,role:existingUser.role},process.env.JWTSECRET)
             res.status(200).json({user:existingUser,token})
         }
-
-   }catch(err)
-   {
-    console.log(err);
-    console.log("Google login failed!");
+        else{
+        //    register
+        const newUser = await users.create({
+            username,email,password,role
+        })
+        const token = jwt.sign({userMail:newUser.email,role:newUser.role},process.env.JWTSECRET)
+            res.status(200).json({user:newUser,token})
+        }
+    }catch(error){
+        console.log(error);
+        res.status(500).json(error)
+        
+    }
     
-    res.status(500).json(err)
-    
-   }
-   
+    // res.status(200).json("Request Recieved")
     
 }
+
+// get user profile
+exports.getProfileController = async (req, res) => {
+  try {
+    console.log("Inside fetchProfile");
+    const useremail = req.payload; // from JWT middleware
+
+    const user = await users.findOne(
+      { email: useremail },
+      { password: 0 } // exclude password
+    );
+
+    res.status(200).json(user);
+  } catch (err) {
+    res.status(500).json("Failed to load profile");
+  }
+};
+
+
+// update pwd :user
+exports.updatePasswordController = async (req, res) => {
+  try {
+    console.log("Inside pwd update");
+    
+    const useremail = req.payload; // from JWT
+    const { currentPassword, newPassword } = req.body;
+
+    //  Validate input
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json("All fields are required");
+    }
+
+    // Find user
+    const user = await users.findOne({ email: useremail });
+    if (!user) {
+      return res.status(404).json("User not found");
+    }
+
+    //  Verify current password
+    const isMatch = await bcrypt.compare(
+      currentPassword,
+      user.password
+    );
+
+    if (!isMatch) {
+      return res.status(401).json("Current password is incorrect");
+    }
+
+    // Hash new password
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(newPassword, salt);
+
+    // Update password
+    user.password = hashedPassword;
+    await user.save();
+
+    res.status(200).json("Password updated successfully");
+  } catch (error) {
+    console.error(error);
+    res.status(500).json("Failed to update password");
+  }
+};
 
 
 // ............................................ADMIN-PAGE-CONTROLLERS............................................

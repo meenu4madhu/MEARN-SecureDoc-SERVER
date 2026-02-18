@@ -8,6 +8,10 @@ const fileSchema =new mongoose.Schema({
           type: String,
           required: true
           },
+          fileSize: {
+           type: Number, 
+           required: true
+          },
           cloudinaryUrl: {
           type: String,
           required: true
@@ -20,8 +24,21 @@ const fileSchema =new mongoose.Schema({
         folderId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'folders',
-        required: true
+        default: null
         },
+        originalFolderId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'folderModel'
+  },
+  isTrashed: {
+    type: Boolean,
+    default: false
+  },
+  trashedAt: {
+    type: Date,
+    default: null
+  },
+
           useremail:{
             type: String,
             required: true

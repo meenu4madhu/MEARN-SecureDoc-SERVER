@@ -6,9 +6,11 @@ const complaintController = require('../controller/complaintController')
 const jwtMiddleware = require('../middlewares/jwtMiddleware')
 const adminMiddleware=require('../middlewares/adminMiddleware')
 const fileController = require('../controller/fileController')
+const  storageController  = require('../controller/storageController');
 const upload = require('../middlewares/multerMiddleware')
 const complaint = require('../models/complaintModel')
 const router = new express.Router()
+const passport = require("../config/passport")
 
 //register
 router.post('/user/register',userController.registerController) 
@@ -17,8 +19,7 @@ router.post('/user/register',userController.registerController)
 router.post('/user/login',userController.loginController) 
 
 // google login
-router.post('/google/sign-in',userController.googleloginController) 
-
+router.post('/google/sign-in',userController.googleLoginController)
 // create folder
 router.post('/user/create-folder',jwtMiddleware,folderController.createFolderController) 
 
@@ -64,5 +65,33 @@ router.patch('/reply/:complaintId',jwtMiddleware,adminMiddleware,complaintContro
 // user: get notification
 router.get('/user/notifications',jwtMiddleware,complaintController.getUserNotificationsController)
 
+// GET TRASH
+router.get('/user/trash',jwtMiddleware,fileController.getTrashFilesController)
+
+// restore file
+router.put('/user/restore/:fileId',jwtMiddleware,fileController.restoreFileController)
+
+// get user profile
+router.get('/user-profile',jwtMiddleware,userController.getProfileController)
+
+// user get their complaint
+router.get('/user/complaintList',jwtMiddleware,complaintController.getUserComplaintsController)
+
+
+// update pwd : user
+router.put('/user/update-password',jwtMiddleware,userController.updatePasswordController)
+
+
+// get file storage - user
+router.get('/user-storageinfo',jwtMiddleware,storageController.getUserStorage)
+
+// get file storage - admin
+router.get('/admin-storageinfo',adminMiddleware,storageController.getAdminStorage)
+
+// get user total storage - admin
+router.get('/admin-userstorage',jwtMiddleware,storageController.getUsersStorageForAdmin)
+
+// admin-storage info
+router.get('/admin-userstorage',jwtMiddleware,storageController.getUsersStorageForAdmin)
 
 module.exports=router

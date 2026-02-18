@@ -4,6 +4,7 @@ const cloudinary = require('../config/cloudinary')
 const decryptFile = require('../utils/decryptFile')
 const crypto = require('crypto')
 const fs = require('fs')
+const cron = require("node-cron")
 
 
   const algorithm = 'aes-256-cbc'
@@ -12,6 +13,39 @@ const fs = require('fs')
     .update(process.env.AES_SECRET)
     .digest()
   
+
+  // delete file after 30 days............................................................................
+   cron.schedule("0 0 * * *", async () => {
+  console.log("Running auto delete for trash files...")
+
+  try {
+    const thirtyDaysAgo = new Date()
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
+
+    const expiredFiles = await files.find({
+      isTrashed: true,
+      trashedAt: { $lte: thirtyDaysAgo }
+    })
+
+    for (let file of expiredFiles) {
+
+      if (file.cloudinaryPublicId) {
+        await cloudinary.uploader.destroy(
+          file.cloudinaryPublicId,
+          { resource_type: "raw" }
+        )
+      }
+
+      await files.findByIdAndDelete(file._id)
+    }
+
+    console.log("Old trash files deleted successfully")
+  } catch (error) {
+    console.log("Auto delete error:", error)
+  }
+})
+
+// .........................................................................................................................
 
 // upload file
 exports.uploadFileController=async(req,res)=>{
@@ -56,6 +90,7 @@ const cipher = crypto.createCipheriv(
     const newFile = await files.create({
       filename: req.file.originalname,
       fileType: req.file.mimetype,
+      fileSize: req.file.size,
       cloudinaryUrl: uploadResult.secure_url,
       cloudinaryPublicId: uploadResult.public_id,
       folderId,
@@ -81,11 +116,11 @@ exports.getFileArrayController=async(req,res)=>{
         const { folderId } = req.params;
         const userMail =req.payload
         if(folderId){
-         const folderFiles =await files.find({folderId: folderId,useremail: userMail})
+         const folderFiles =await files.find({folderId: folderId,useremail: userMail,isTrashed: false})
         res.status(200).json(folderFiles)
         }
         else{
-        const allFiles =await files.find({useremail:userMail})
+        const allFiles =await files.find({useremail:userMail,isTrashed: false})
         res.status(200).json(allFiles)
         }
         
@@ -253,13 +288,14 @@ exports.deleteFileController=async(req,res)=>{
 const file =await files.findOne({_id:fileId,useremail})
 if(file){
   // delete from cloud
-await cloudinary.uploader.destroy(file.cloudinaryPublicId, {
-    resource_type: 'raw'
-  })
-  // delete data from db
-  const deletedfile = await files.findByIdAndDelete(fileId)
-     res.status(200).json(deletedfile)
+file.isTrashed = true
+file.trashedAt = new Date()
+file.originalFolderId = file.folderId
+file.folderId = null   // removed from folder
 
+await file.save()
+
+res.status(200).json("File moved to trash")
 }else{
   res.status(404).json("File not Found !")
 }
@@ -271,3 +307,55 @@ catch(error){
     
   }
 }
+
+// trash
+exports.getTrashFilesController = async (req, res) => {
+  console.log("Inside getTrashFilesController");
+  
+  try {
+    const useremail = req.payload
+    const trashedFiles = await files.find({
+      useremail,
+      isTrashed: true
+    }).populate("originalFolderId", "foldername")
+
+    res.status(200).json(trashedFiles)
+  } catch (err) {
+    console.error("Trash Error:", err.message);
+    res.status(500).json("Failed to load trash")
+  }
+}
+// restore
+// restore file from trash
+exports.restoreFileController = async (req, res) => {
+  console.log("Inside restoreFileController")
+
+  try {
+    const { fileId } = req.params
+    const useremail = req.payload
+
+    const file = await files.findOne({
+      _id: fileId,
+      useremail,
+      isTrashed: true
+    })
+
+    if (!file) {
+      return res.status(404).json("File not found in trash")
+    }
+
+    // restore values
+    file.isTrashed = false
+    file.trashedAt = null
+    file.folderId = file.originalFolderId
+    file.originalFolderId = null
+
+    await file.save()
+
+    res.status(200).json("File restored successfully")
+  } catch (error) {
+    console.log(error)
+    res.status(500).json("File restore failed")
+  }
+}
+

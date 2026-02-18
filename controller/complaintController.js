@@ -35,6 +35,25 @@ exports.addComplaintController = async (req, res) => {
 };
 
 
+// user : get their complaints
+exports.getUserComplaintsController = async (req, res) => {
+    console.log("Inside getUserComplaintsController");
+    const useremail = req.payload; 
+    
+  try {
+  
+    const Complaint =await  complaint.find({useremail})
+    res.status(200).json(Complaint);
+    console.log(complaint);
+    
+  } catch (error) {
+    res.status(500).json(error);
+    console.log("failed to fetch complaints...",error);
+    
+  }
+};
+
+
 // admin : get all complaints
 exports.getAllComplaintsController = async (req, res) => {
     console.log("Inside getAllComplaintsController");
@@ -102,3 +121,5 @@ exports.getUserNotificationsController = async (req, res) => {
     res.status(500).json("Failed to fetch notifications");
   }
 };
+
+

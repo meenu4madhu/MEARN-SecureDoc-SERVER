@@ -2,6 +2,7 @@ require('dotenv').config()
 const express = require('express')
 const cors = require('cors')
 const router = require('./routes/routing.js')
+const passport = require('./config/passport.js')
 require('./config/db')
 // database connection
 
@@ -17,6 +18,7 @@ sddlockerServer.use(express.json())
 // use router in server
 sddlockerServer.use(router)
 
+sddlockerServer.use(passport.initialize())
 // create a port where server should listen in web
 const PORT=3000
 
